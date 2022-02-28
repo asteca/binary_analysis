@@ -101,30 +101,30 @@ def main(profiler):
             clust_synth, masses_interp = massInterp.interp(
                 isoch_binaries, mass_ini, masses)
 
-            # For each mass in 'masses_interp' assign a number in the [0, 1]
-            # range distributed interwined
-            # TODO just use a random.uniform() distribution?
-            N_M1 = len(masses_interp)
-            N1 = int(len(masses_interp) * .5)
-            N2 = len(masses_interp) - N1
-            if N_M1 % 2 == 1:
-                N2 -= 1
-            x1 = np.linspace(0, 1, N1)
-            x2 = np.linspace(1, 0, N2)
-            # Intertwine
-            x = np.empty((N1 + N2))
-            x[0::2] = x1
-            x[1::2] = x2
-            if N_M1 % 2 == 1:
-                x = np.append(x, [.5])
-            masses_interwined = x
-            # masses_interwined = np.random.uniform(0, 1, len(masses_interp))
+            # # For each mass in 'masses_interp' assign a number in the [0, 1]
+            # # range distributed interwined
+            # # TODO just use a random.uniform() distribution?
+            # N_M1 = len(masses_interp)
+            # N1 = int(len(masses_interp) * .5)
+            # N2 = len(masses_interp) - N1
+            # if N_M1 % 2 == 1:
+            #     N2 -= 1
+            # x1 = np.linspace(0, 1, N1)
+            # x2 = np.linspace(1, 0, N2)
+            # # Intertwine
+            # x = np.empty((N1 + N2))
+            # x[0::2] = x1
+            # x[1::2] = x2
+            # if N_M1 % 2 == 1:
+            #     x = np.append(x, [.5])
+            # masses_interwined = x
+            # # masses_interwined = np.random.uniform(0, 1, len(masses_interp))
 
             # IMF_lkl_params, IMF_synth_clusts = diffEvol(
-            #     masses_interp, clust_synth, obs_uncert, cluster_lkl)
+            #     cluster_lkl, obs_uncert, clust_synth, masses_interp)
 
             IMF_lkl_params, IMF_synth_clusts = bruteForce(
-                cluster_lkl, obs_uncert, clust_synth, masses_interp, masses_interwined)
+                cluster_lkl, obs_uncert, clust_synth, masses_interp)
 
             # profiler.stop()
             # print("Preparing profiler report...")
@@ -146,12 +146,13 @@ def main(profiler):
             M1_sing_masses = masses_interp[s_msk]
             Mb_h, edges = np.histogram(M1_binr_masses, 5)
             Ms_h, _ = np.histogram(M1_sing_masses, edges)
-            # Mb_h, _ = np.histogram(M1_binr_masses, edges)
             Mt_h = Ms_h + Mb_h
             x = .5 * (edges[1:] + edges[:-1])
             plt.subplot(223)
             plt.scatter(x, Mb_h / Mt_h)
             plt.show()
+            print(x)
+            print(Mb_h / Mt_h)
             breakpoint()
 
             bf = b_msk.sum() / masses_interp.size
@@ -168,7 +169,7 @@ def main(profiler):
         breakpoint()
 
 
-def bruteForce(cluster_lkl, obs_uncert, clust_synth, masses_interp, masses_interwined):
+def bruteForce(cluster_lkl, obs_uncert, clust_synth, masses_interp):
     """
     """
     gamma_m_lst = np.linspace(gamma_m_min, gamma_m_max, 100)
@@ -181,8 +182,7 @@ def bruteForce(cluster_lkl, obs_uncert, clust_synth, masses_interp, masses_inter
     for gamma_m in gamma_m_lst:
         for _ in range(100):
             lkl = minFunc(
-                gamma_m, masses_interp, m_p, clust_synth, obs_uncert,
-                cluster_lkl, False)
+                gamma_m, m_p, clust_synth, obs_uncert, cluster_lkl, False)
             if lkl > lkl_old:
                 gamma_m_opt = gamma_m
                 lkl_old = lkl
@@ -190,8 +190,7 @@ def bruteForce(cluster_lkl, obs_uncert, clust_synth, masses_interp, masses_inter
 
     IMF_lkl_params = gamma_m_opt
     IMF_synth_clusts = minFunc(
-        gamma_m, masses_interp, m_p, clust_synth, obs_uncert, cluster_lkl,
-        True)
+        gamma_m_opt, m_p, clust_synth, obs_uncert, cluster_lkl, True)
 
     b_msk = IMF_synth_clusts[0] > bf_cut
     bf = b_msk.sum() / masses_interp.size
@@ -202,7 +201,7 @@ def bruteForce(cluster_lkl, obs_uncert, clust_synth, masses_interp, masses_inter
     return IMF_lkl_params, IMF_synth_clusts
 
 
-def diffEvol(masses_interp, clust_synth, obs_uncert, cluster_lkl):
+def diffEvol(cluster_lkl, obs_uncert, clust_synth, masses_interp):
     """
     """
     # Convert masses to [0, 1] range
@@ -211,11 +210,11 @@ def diffEvol(masses_interp, clust_synth, obs_uncert, cluster_lkl):
     # bounds = [(gamma_m_min, gamma_m_max), (q_min, q_max), (.1, 3)]
     bounds = [(gamma_m_min, gamma_m_max)]
     res = DE(minFunc, bounds, tol=DE_tol, args=(
-        masses_interwined, m_p, clust_synth, obs_uncert, cluster_lkl, False))
+        m_p, clust_synth, obs_uncert, cluster_lkl, False))
 
     IMF_lkl_params = res.x[0]
     IMF_synth_clusts = minFunc(
-        res.x, masses_interwined, m_p, clust_synth, obs_uncert, cluster_lkl, True)
+        IMF_lkl_params, m_p, clust_synth, obs_uncert, cluster_lkl, True)
 
     b_msk = IMF_synth_clusts[0] > bf_cut
     bf = b_msk.sum() / masses_interp.size
@@ -250,8 +249,7 @@ def InvgammaFunc(gamma_p):
 
 
 def minFunc(
-    gamma_m, masses_interp, m_p, clust_synth, obs_uncert, cluster_lkl,
-        ret_clust):
+        gamma_m, m_p, clust_synth, obs_uncert, cluster_lkl, ret_clust):
     """
     """
     # Using 'gamma_m', obtain the 'gamma_p' values for each (normalized) mass
@@ -259,6 +257,8 @@ def minFunc(
 
     # Using the 'gamma_p' values obtain the 'q' values for each mass
     q_vals = InvgammaFunc(gamma_p)
+
+    # Are q_vals being generated such that M2 < 0.08?
 
     clust_synth_binar = binarFunc.addBinaries(
         q_dist, clust_synth, q_vals)

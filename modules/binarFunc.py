@@ -50,48 +50,6 @@ def mag_combine(m1, m2):
     return mbin
 
 
-def QDistFunc(gamma_q, x):
-    """
-    This function maps the primary masses 'M1' with their corresponding 'q'
-    value (mass-ratio), later used to select the secondary mass.
-    """
-
-    # q_vals = gamma_q * M1_masses ** (gamma_q - 1)
-    # q_vals = np.clip(q_vals, a_min=0, a_max=1)
-
-    # def CDF(x, g):
-    #     """
-    #     """
-    #     return (x**g - qmin**g) / (qmax**g - qmin**g)
-
-    # def CDF_inv(x, g):
-    #     """
-    #     """
-    #     return ((qmax**g - qmin**g) * x + qmin**g) ** (1 / g)
-
-    # x = np.random.uniform(0, 1, len(M1_masses))
-
-    # This is the inverse CDF for the power law: y=g * x**(g-1)
-    q_vals = x**(1 / gamma_q)
-
-    # # M2_masses = M1_masses * q_vals
-    # # M12_masses = M1_masses + M2_masses
-    # import matplotlib.pyplot as plt
-    # plt.subplot(131)
-    # plt.hist(gamma_q)
-    # plt.xlabel("gamma_q")
-    # plt.subplot(132)
-    # plt.hist(q_vals)
-    # plt.xlabel("q_vals")
-    # plt.subplot(133)
-    # plt.scatter(M1_masses, q_vals)
-    # plt.xlabel("M1")
-    # plt.ylabel("gamma_q")
-    # plt.show()
-
-    return q_vals
-
-
 def addBinaries(q_dist, clust_synth, q_vals):
     """
     """
