@@ -50,7 +50,7 @@ def mag_combine(m1, m2):
     return mbin
 
 
-def QDistFunc(gamma_q, M1_masses):
+def QDistFunc(gamma_q, x):
     """
     This function maps the primary masses 'M1' with their corresponding 'q'
     value (mass-ratio), later used to select the secondary mass.
@@ -69,7 +69,9 @@ def QDistFunc(gamma_q, M1_masses):
     #     """
     #     return ((qmax**g - qmin**g) * x + qmin**g) ** (1 / g)
 
-    x = np.random.uniform(0, 1, len(M1_masses))
+    # x = np.random.uniform(0, 1, len(M1_masses))
+
+    # This is the inverse CDF for the power law: y=g * x**(g-1)
     q_vals = x**(1 / gamma_q)
 
     # # M2_masses = M1_masses * q_vals
