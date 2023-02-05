@@ -4,7 +4,7 @@ from . import extin_coefs
 from . import readData
 
 
-def isochProcess(cmd_systs, idx_header, mag_max, met, age, ext, dist):
+def isochProcess(cmd_systs, idx_header, met, age, ext, dist):
     """
     Load the corresponding isochrone, move it, interpolate it, and return
     the required arrays.

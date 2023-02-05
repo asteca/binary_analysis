@@ -4,10 +4,6 @@ import numpy as np
 # from scipy.spatial.distance import cdist
 
 
-# Mass range for single stars
-# mmin, mmax = 0.08, 150
-
-
 def generate(q_dist, isoch_phot, mass_ini, isoch_col_mags):
     """
     """
@@ -54,15 +50,19 @@ def addBinaries(q_dist, clust_synth, q_vals):
     """
     """
 
-    idx = closestIdx(q_dist, q_vals, len(q_vals))
+    idx = closestIdx(q_dist, q_vals)
 
-    # arr = []
-    # for i, st in enumerate(clust_synth.T):
-    #     arr.append(st[:, idx[i]])
-    # single_systs = np.array(arr).T
+    # # 'IndexError: shape mismatch'. Apparently one star goes missing in 'idx'
+    # if len(idx) < clust_synth.shape[2]:
+    #     idx = np.array(list(idx) + [0])
 
     # Source: https://stackoverflow.com/a/71268132/1391441
-    binar_systs = clust_synth[idx, :, np.arange(clust_synth.shape[2])].T
+    # When using the DE sometimes this will fail with
+    try:
+        binar_systs = clust_synth[idx, :, np.arange(clust_synth.shape[2])].T
+    except IndexError:
+        print("error")
+        breakpoint()
 
     # import matplotlib.pyplot as plt
     # plt.scatter(clust_synth[0][1], clust_synth[0]
@@ -75,23 +75,39 @@ def addBinaries(q_dist, clust_synth, q_vals):
     return binar_systs
 
 
-def closestIdx(arr1, arr2, N):
+def closestIdx(A, target):
     """
     Source: https://stackoverflow.com/a/21391265/1391441
+
+    arr1 (or A) is already ordered, so we skip the rest
     """
+    # A must be sorted
+    idx = A.searchsorted(target)
+    idx = np.clip(idx, 1, len(A) - 1)
+    left = A[idx - 1]
+    right = A[idx]
+    idx -= target - left < right - target
+    return idx
 
-    def find_closest(A, target):
-        # A must be sorted
-        idx = A.searchsorted(target)
-        idx = np.clip(idx, 1, len(A) - 1)
-        left = A[idx - 1]
-        right = A[idx]
-        idx -= target - left < right - target
-        return idx
+# def closestIdx(arr1, arr2):
+#     """
+#     Source: https://stackoverflow.com/a/21391265/1391441
+#     """
 
-    order = arr1.argsort()
-    key = arr1[order]
-    target = arr2[:N]
-    closest = find_closest(key, target)
+#     def find_closest(A, target):
+#         # A must be sorted
+#         idx = A.searchsorted(target)
+#         idx = np.clip(idx, 1, len(A) - 1)
+#         left = A[idx - 1]
+#         right = A[idx]
+#         idx -= target - left < right - target
+#         return idx
 
-    return order[closest]
+#     # 'arr1' is already sorted, so we can skip this
+#     # order = arr1.argsort()
+#     # key = arr1[order]
+#     # target = arr2
+#     # closest = find_closest(key, target)
+#     # return order[closest]
+
+#     return find_closest(arr1, arr2)
